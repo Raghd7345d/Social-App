@@ -1,7 +1,7 @@
 import * as React from "react";
 import Svg, { SvgProps, Path } from "react-native-svg";
 
-const ArrowLeft01Icon = (props) => (
+const ArrowLeft = (props) => (
   <Svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -21,4 +21,4 @@ const ArrowLeft01Icon = (props) => (
   </Svg>
 );
 
-export default ArrowLeft01Icon;
+export default ArrowLeft;

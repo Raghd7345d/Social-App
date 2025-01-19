@@ -1,7 +1,7 @@
 import * as React from "react";
 import Svg, { SvgProps, Path } from "react-native-svg";
 
-const Share01Icon = (props) => (
+const Share = (props) => (
   <Svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -28,4 +28,4 @@ const Share01Icon = (props) => (
   </Svg>
 );
 
-export default Share01Icon;
+export default Share;

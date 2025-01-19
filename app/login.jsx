@@ -18,6 +18,7 @@ import Button from "../components/Button";
 import Input from "../components/Input";
 import Icon from "../assets/Icons";
 import { useRef, useState } from "react";
+import { supabase } from "../lip/supabase";
 
 export default function Login() {
   const router = useRouter();
@@ -31,9 +32,6 @@ export default function Login() {
       "Hey, did you forget something? Like... your login details?",
       "Empty fields? Bold move. Let’s try that again with some actual info!",
       "Whoopsie! You missed a spot. How about filling in those blanks?",
-      "Are you a magician? Because you made your details disappear!",
-      "Looks like you’re keeping secrets! We need those fields filled.",
-      "Fields empty? Were you going for invisible text? We need the visible kind!",
     ];
 
     if (!emailRef.current || !passwordRef.current) {
@@ -42,11 +40,13 @@ export default function Login() {
       alert(randomMessage);
       return false;
     }
+    let email = emailRef.current.trim();
+    let password = passwordRef.current.trim();
 
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
+      email,
+      password,
     });
 
     if (error) Alert.alert(error.message);

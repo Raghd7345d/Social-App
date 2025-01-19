@@ -52,15 +52,14 @@ export default function SignUp() {
     } = await supabase.auth.signUp({
       email,
       password,
-      name,
+      options: {
+        data: {
+          name,
+        },
+      },
     });
-    if (error) Alert.alert(error.message);
-    if (!session)
-      Alert.alert("Please check your inbox for email verification!");
-
+    if (error) Alert.alert("Sign Up", error.message);
     setLoading(false);
-
-    console.log(session);
   }
 
   return (
