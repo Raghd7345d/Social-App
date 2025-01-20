@@ -3,7 +3,6 @@ import { Text, View, StyleSheet } from "react-native";
 import BackButton from "./BackButton";
 import { hp } from "../helpers/common";
 import { theme } from "../constants/theme";
-import { color } from "@rneui/themed/dist/config";
 
 export default function Header({ title, showBackButton = true, mb = 10 }) {
   const router = useRouter();
