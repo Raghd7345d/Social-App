@@ -22,6 +22,19 @@ export const getSupabaseFileUrl = (filePath) => {
   return null;
 };
 
+export async function downloadFile(url) {
+  try {
+    const { uri } = await FileSystem.downloadAsync(url, getLocalFilePath(url));
+    return uri;
+  } catch (error) {
+    return null;
+  }
+}
+export function getLocalFilePath(filePath) {
+  const fileName = filePath.split("/").pop();
+  return `${FileSystem.documentDirectory}${fileName}`;
+}
+
 // Function to upload file to Supabase Storage
 export const uploadfile = async (folderName, fileUri, isImage = true) => {
   try {

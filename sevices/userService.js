@@ -6,7 +6,7 @@ export async function getUserData(userId) {
       .from("users")
       .select()
       .eq("id", userId)
-      .maybeSingle();
+      .single();
 
     if (error) {
       console.error("Error fetching user data:", error);
@@ -47,6 +47,26 @@ export async function updateUser(userId, data) {
     return { success: true, data: updatedData };
   } catch (err) {
     console.error("Unexpected error while updating user data:", err);
+    return { success: false, msg: "Unexpected error", data: null };
+  }
+}
+
+export async function getAllUsers() {
+  try {
+    const { data, error } = await supabase.from("users").select("*"); // Fetch all users
+
+    if (error) {
+      console.error("Error fetching all users:", error);
+      return {
+        success: false,
+        msg: error.message || "Error fetching all users",
+        data: null,
+      };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (err) {
+    console.error("Unexpected error while fetching all users:", err);
     return { success: false, msg: "Unexpected error", data: null };
   }
 }

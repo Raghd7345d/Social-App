@@ -1,15 +1,25 @@
-import React, { Component } from "react";
-import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
+import React, { Component, createContext, useEffect, useState } from "react";
+import {
+  Text,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Share,
+} from "react-native";
 import { useAuth } from "../contexts/AuthContext";
 import { theme } from "../constants/theme";
 import { hp, wp } from "../helpers/common";
 import AvatarImage from "./AvatarImage";
 import moment from "moment";
 import RenderHtml from "react-native-render-html";
-import { getSupabaseFileUrl } from "../sevices/imageService";
+import { downloadFile, getSupabaseFileUrl } from "../sevices/imageService";
 import { Image } from "expo-image";
 import { VideoView, useVideoPlayer } from "expo-video";
 import Icon from "../assets/Icons";
+import { createLike, removeLike } from "../sevices/postService";
+import { stripHtmlTags } from "../helpers/common";
+import Loading from "./Loading";
 
 const textStyle = {
   color: theme.colors.dark,
@@ -31,16 +41,28 @@ const tagesStyles = {
 export default function PostCard({
   item,
   router,
-  currenUser,
+  currentUser,
   hasShadow = true,
+  showMoreIcon = true,
+  onDelete = () => {},
+  onEdit = () => {},
+  showDeleteIcon = false,
 }) {
-  const { user } = useAuth();
   const shadowStyles = {
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 1,
   };
+  // const { user } = useAuth();
+  const [loading, setloading] = useState(false);
+
+  const [likes, setLikes] = useState([]);
+
+  useEffect(() => {
+    setLikes(item?.postLikes);
+  }, []);
+
   const player = useVideoPlayer(
     getSupabaseFileUrl(item?.file)?.uri,
     (player) => {
@@ -50,13 +72,62 @@ export default function PostCard({
   );
 
   function openPostsdetails() {
-    return;
+    if (!showMoreIcon) return;
+    router.push({
+      pathname: "postDetails",
+      params: { postId: item?.id },
+    });
   }
 
-  const createdAt = moment(item?.created_At).format("MMM D");
-  const liked = true;
-  const likes = [];
+  async function onLike() {
+    let data = {
+      userId: currentUser?.id, // Make sure you use currentUser.id
+      postId: item?.id,
+    };
 
+    if (liked) {
+      let updateLikes = likes.filter((like) => like.userId !== currentUser?.id); // Correct the condition here as well
+      setLikes([...updateLikes]);
+      const res = await removeLike(currentUser?.id, item?.id); // Fix `currentUser?.id` and `item?.id`
+
+      if (!res.success) {
+        Alert.alert("Error", "Something went wrong while removing the like.");
+      }
+    } else {
+      let res = await createLike(data);
+      setLikes([...likes, data]);
+
+      if (!res.success) {
+        Alert.alert("Error", "Something went wrong while adding the like.");
+      }
+    }
+  }
+
+  const createdAt = moment(item?.created_at).format("MMM D");
+  const liked = likes.filter((like) => like.userId == currentUser?.id)[0]
+    ? true
+    : false;
+  async function onShare() {
+    setloading(true);
+    let content = {
+      message: stripHtmlTags(item?.body),
+    };
+
+    if (item?.file) {
+      let url = await downloadFile(getSupabaseFileUrl(item?.file)?.uri);
+
+      content.url = url;
+    }
+    setloading(false);
+
+    await Share.share(content);
+  }
+  function handldelete() {
+    Alert.alert("Yikes!", "Nuke this comment? It vanishes like free pizza!", [
+      { text: "Nah", onPress: () => console.log("Saved!") },
+      { text: "Bye bye!", onPress: () => onDelete(item), style: "destructive" },
+    ]);
+  }
   return (
     <View style={[styles.container, hasShadow && shadowStyles]}>
       <View style={styles.header}>
@@ -72,15 +143,28 @@ export default function PostCard({
             <Text style={styles.postTime}>{createdAt}</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.icon} onPress={openPostsdetails}>
-          <Icon
-            name="threeDotsHorizontal"
-            size={hp(4)}
-            strokeWidth={1.5}
-            color={theme.colors.text}
-          />
-        </TouchableOpacity>
+        {showMoreIcon && (
+          <TouchableOpacity style={styles.icon} onPress={openPostsdetails}>
+            <Icon
+              name="threeDotsHorizontal"
+              size={hp(4)}
+              strokeWidth={1.5}
+              color={theme.colors.text}
+            />
+          </TouchableOpacity>
+        )}
+        {showDeleteIcon && currentUser.id == item?.userId && (
+          <View style={styles.actions}>
+            <TouchableOpacity onPress={() => onEdit(item)}>
+              <Icon name="edit" size={hp(2.5)} color={theme.colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handldelete}>
+              <Icon name="delete" size={hp(2.5)} color={theme.colors.rose} />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
+
       {/* Post body */}
       <View style={styles.content}>
         <View style={styles.postBody}>
@@ -118,29 +202,34 @@ export default function PostCard({
       {/* Like, comment & share */}
       <View style={styles.footer}>
         <View style={styles.footerButton}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={onLike}>
             {/* You can adjust the Icon name as needed */}
             <Icon
               name="heart"
               size={24}
-              fill={liked ? theme.colors.rose : "transparent"}
-              color={liked ? theme.colors.rose : theme.colors.textDark}
+              fill={liked ? theme.colors.roseLight : "transparent"}
+              color={liked ? theme.colors.roseLight : theme.colors.textDark}
             />
           </TouchableOpacity>
           <Text style={styles.count}>{likes?.length}</Text>
         </View>
         <View style={styles.footerButton}>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={openPostsdetails}>
             {/* You can adjust the Icon name as needed */}
             <Icon name="comment" size={24} color={theme.colors.textDark} />
           </TouchableOpacity>
-          <Text style={styles.count}>{0}</Text>
+          <Text style={styles.count}>{item?.comments?.[0]?.count || 0}</Text>
         </View>
+
         <View style={styles.footerButton}>
-          <TouchableOpacity>
-            {/* You can adjust the Icon name as needed */}
-            <Icon name="share" size={24} color={theme.colors.textDark} />
-          </TouchableOpacity>
+          {loading ? (
+            <Loading size="small" />
+          ) : (
+            <TouchableOpacity onPress={onShare}>
+              {/* You can adjust the Icon name as needed */}
+              <Icon name="share" size={24} color={theme.colors.textDark} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -193,6 +282,11 @@ const styles = StyleSheet.create({
   },
   footerButton: {
     marginLeft: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  actions: {
     flexDirection: "row",
     alignItems: "center",
     gap: 18,

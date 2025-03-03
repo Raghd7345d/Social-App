@@ -18,7 +18,7 @@ import { hp, wp } from "../../helpers/common";
 import AvatarImage from "../../components/AvatarImage";
 import { theme } from "../../constants/theme";
 import RichTextEditor from "../../components/RichTextEditor";
-import { router, useRouter } from "expo-router";
+import { router, useLocalSearchParams, useRouter } from "expo-router";
 import Icon from "../../assets/Icons";
 import Button from "../../components/Button";
 import { getSupabaseFileUrl } from "../../sevices/imageService";
@@ -32,6 +32,16 @@ export default function NewPost() {
   const Router = useRouter();
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
+  const post = useLocalSearchParams();
+  useEffect(() => {
+    if (post && post.id) {
+      bodyRef.current = post.body;
+      setFile(post.file || null);
+      setTimeout(() => {
+        editorRef?.current?.setContentHTML(post.body);
+      }, 300);
+    }
+  }, []);
 
   async function onPick(isImage) {
     const permissionResult =
@@ -105,6 +115,8 @@ export default function NewPost() {
       userId: user?.id,
     };
 
+    if (post && post.id) data.id = post.id;
+
     setLoading(true);
     let res = await CreatePost(data);
     setLoading(false);
@@ -137,7 +149,9 @@ export default function NewPost() {
           <View style={styles.textEditor}>
             <RichTextEditor
               editorRef={editorRef}
-              onChange={(body) => (bodyRef.current = body)}
+              onChange={(body) => {
+                bodyRef.current = body;
+              }}
             />
           </View>
           {file && (
@@ -180,7 +194,7 @@ export default function NewPost() {
         </ScrollView>
         <Button
           buttonStyle={{ height: hp(6.2) }}
-          title="Post me"
+          title={post && post.id ? "Update me" : " Post me"}
           loading={loading}
           hasShadow={false}
           onPress={onSubmit}
